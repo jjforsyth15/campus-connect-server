@@ -1,0 +1,130 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserType {
+  student   
+  faculty
+  alumni
+}
+
+enum ClassYear {
+  freshman
+  sophomore
+  junior
+  senior
+}
+
+enum RequestStatus {
+  pending
+  accepted
+  rejected
+  cancelled
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  banner      String?
+  createdById String
+  createdAt   DateTime @default(now())
+
+  createdBy User @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([startDate, endDate])
+}
+
+model User {
+  id                          String    @id @default(uuid())
+  email                       String    @unique
+  passwordHashed              String
+  firstName                   String
+  lastName                    String
+  isVerified                  Boolean   @default(false)
+  verificationToken           String?
+  verificationTokenExpiration DateTime?
+  profilePicture              String?
+  bio                         String?
+  userType                    UserType
+  createdAt                   DateTime  @default(now())
+  city                        String?
+  websites                    String[]  @default([])
+  passwordResetToken          String?   @unique
+  passwordResetExpiry         DateTime?
+  
+  event          Event[] @relation("CreatedEvents")
+  connections    User[]  @relation("UserConnections")
+  connectedBy    User[]  @relation("UserConnections")
+  sentRequests     ConnectionRequest[] @relation("Sent")
+  receivedRequests ConnectionRequest[] @relation("Received")
+
+  student Student?
+  faculty Faculty?
+  alumni  Alumni?
+}
+
+model Student {
+  userId         String    @unique
+  studentId      String    @unique
+  major          String
+  minor          String?
+  year           ClassYear
+  graduationYear Int
+  gpa            Float?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([graduationYear])
+}
+
+model Faculty {
+  userId            String   @unique
+  employeeId        String   @unique
+  department        String
+  title             String
+  officeLocation    String
+  officeHours       String
+  researchInterests String?
+  sections          String[] @default([])
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Alumni {
+  userId          String  @unique
+  graduationYear  Int
+  degree          String
+  currentCompany  String?
+  currentPosition String?
+  industry        String?
+  isMentor        Boolean @default(false)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([graduationYear])
+}
+
+model ConnectionRequest {
+  id         String        @id @default(cuid())
+  sendId     String
+  receiverId String
+  status     RequestStatus @default(pending)
+  createdAt  DateTime      @default(now())
+
+  sender   User @relation("Sent", fields: [sendId], references: [id])
+  receiver User @relation("Received", fields: [receiverId], references: [id], onDelete: Cascade)
+
+  @@index([sendId])
+  @@index([receiverId])
+  @@index([status])
+}

@@ -5,6 +5,7 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
+pnpm-debug.log*
 
 # Diagnostic reports (https://nodejs.org/api/report.html)
 report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
@@ -84,25 +85,12 @@ dist
 
 # Gatsby files
 .cache/
-# Comment in the public line in if your project uses Gatsby and not Next.js
-# https://nextjs.org/blog/next-9-1#public-directory-support
-# public
 
 # vuepress build output
 .vuepress/dist
 
 # vuepress v2.x temp and cache directory
 .temp
-.cache
-
-# Sveltekit cache directory
-.svelte-kit/
-
-# vitepress build output
-**/.vitepress/dist
-
-# vitepress cache directory
-**/.vitepress/cache
 
 # Docusaurus cache and generated files
 .docusaurus
@@ -115,9 +103,6 @@ dist
 
 # DynamoDB Local files
 .dynamodb/
-
-# Firebase cache directory
-.firebase/
 
 # TernJS port file
 .tern-port
@@ -137,3 +122,41 @@ dist
 # Vite logs files
 vite.config.js.timestamp-*
 vite.config.ts.timestamp-*
+
+# IDEs and editors
+.DS_Store
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.classpath
+.c9/
+*.launch
+.settings/
+*.sublime-workspace
+
+# OS Files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# CampusConnect specific
+/backend/dist/
+/backend/prisma/migrations/*_migration_lock.toml
+/frontend/.next/
+/frontend/out/
+
+# Testing
+/backend/coverage/
+/frontend/coverage/
+*.test.js.snap
+
+# Temporary files
+*.tmp
+.temp/
+# macOS system files
+.DS_Store
+**/.DS_Store
