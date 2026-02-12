@@ -1,6 +1,7 @@
 import express from "express";
 import userRoutes from "./modules/auth/auth.routes";
 import eventRoutes from "./modules/event/event.routes";
+import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import { errorHandler } from "./middleware/errorHandler";
 
 import {
@@ -31,6 +32,7 @@ app.get("/", apiRateLimiter, (_req, res) => {
 // API Routes
 app.use("/api/v1/users", userRoutes);
 app.use("/api/v1/events", eventRoutes);
+app.use("/api/v1/marketplace", marketplaceRoutes);
 
 // Register global error handler (needs to be last)
 app.use(errorHandler);

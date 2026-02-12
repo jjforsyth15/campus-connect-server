@@ -3,13 +3,212 @@ generator client {
 }
 
 datasource db {
-  provider  = "postgresql"
-  url       = env("DATABASE_URL")
-  directUrl = env("DIRECT_URL")
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Event {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startDate   DateTime
+  endDate     DateTime
+  location    String?
+  banner      String?
+  createdById String
+  createdAt   DateTime @default(now())
+  createdBy   User     @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([startDate, endDate])
+}
+
+model User {
+  id                          String              @id @default(uuid())
+  email                       String              @unique
+  firstName                   String
+  lastName                    String
+  isVerified                  Boolean             @default(false)
+  profilePicture              String?
+  bio                         String?
+  userType                    UserType
+  createdAt                   DateTime            @default(now())
+  city                        String?
+  websites                    String[]            @default([])
+  passwordHashed              String
+  verificationToken           String?
+  verificationTokenExpiration DateTime?
+  passwordResetExpiry         DateTime?
+  passwordResetToken          String?             @unique
+  alumni                      Alumni?
+  Comment                     Comment[]
+  receivedRequests            ConnectionRequest[] @relation("Received")
+  sentRequests                ConnectionRequest[] @relation("Sent")
+  event                       Event[]             @relation("CreatedEvents")
+  faculty                     Faculty?
+  Like                        Like[]
+  Livestream                  Livestream[]
+  Post                        Post[]
+  student                     Student?
+  User_A                      User[]              @relation("UserConnections")
+  User_B                      User[]              @relation("UserConnections")
+  marketplaceListings         MarketplaceListing[] @relation("MarketplaceListings")
+  marketplaceFavorites        MarketplaceFavorite[] @relation("UserFavorites")
+}
+
+model Student {
+  userId         String    @unique
+  studentId      String    @unique
+  major          String
+  minor          String?
+  year           ClassYear
+  graduationYear Int
+  gpa            Float?
+  user           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([graduationYear])
+}
+
+model Faculty {
+  userId            String   @unique
+  employeeId        String   @unique
+  department        String
+  title             String
+  officeLocation    String
+  researchInterests String?
+  sections          String[] @default([])
+  officeHours       String
+  user              User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Alumni {
+  userId          String  @unique
+  degree          String
+  currentCompany  String?
+  industry        String?
+  isMentor        Boolean @default(false)
+  currentPosition String?
+  graduationYear  Int
+  user            User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([graduationYear])
+}
+
+model ConnectionRequest {
+  id         String        @id @default(cuid())
+  sendId     String
+  receiverId String
+  status     RequestStatus @default(pending)
+  createdAt  DateTime      @default(now())
+  receiver   User          @relation("Received", fields: [receiverId], references: [id], onDelete: Cascade)
+  sender     User          @relation("Sent", fields: [sendId], references: [id])
+
+  @@index([sendId])
+  @@index([receiverId])
+  @@index([status])
+}
+
+model Comment {
+  id        String   @id
+  userId    String
+  postId    String
+  content   String
+  createdAt DateTime @default(now())
+  updatedAt DateTime
+  Post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([postId])
+  @@index([userId])
+}
+
+model Like {
+  id        String   @id
+  userId    String
+  postId    String
+  createdAt DateTime @default(now())
+  Post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+  User      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, postId])
+  @@index([postId])
+}
+
+model Livestream {
+  id          String       @id
+  userId      String
+  title       String
+  status      StreamStatus @default(LIVE)
+  viewerCount Int          @default(0)
+  startedAt   DateTime     @default(now())
+  endedAt     DateTime?
+  User        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([status])
+  @@index([userId])
+}
+
+model Post {
+  id             String    @id
+  userId         String
+  content        String
+  images         String[]  @default([])
+  isRepost       Boolean   @default(false)
+  originalPostId String?
+  repostComment  String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime
+  Comment        Comment[]
+  Like           Like[]
+  Post           Post?     @relation("PostToPost", fields: [originalPostId], references: [id])
+  other_Post     Post[]    @relation("PostToPost")
+  User           User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([originalPostId])
+  @@index([userId])
+}
+
+model MarketplaceListing {
+  id            String                @id @default(cuid())
+  title         String
+  description   String
+  price         Float
+  originalPrice Float?
+  images        String[]              @default([])
+  condition     ItemCondition
+  category      MarketplaceCategory
+  location      String
+  views         Int                   @default(0)
+  status        ListingStatus         @default(active)
+  sellerId      String
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
+  seller        User                  @relation("MarketplaceListings", fields: [sellerId], references: [id], onDelete: Cascade)
+  favoritedBy   MarketplaceFavorite[]
+
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@index([sellerId])
+  @@index([price])
+}
+
+model MarketplaceFavorite {
+  id        String             @id @default(cuid())
+  userId    String
+  listingId String
+  createdAt DateTime           @default(now())
+  user      User               @relation("UserFavorites", fields: [userId], references: [id], onDelete: Cascade)
+  listing   MarketplaceListing @relation(fields: [listingId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, listingId])
+  @@index([userId])
+  @@index([listingId])
 }
 
 enum UserType {
-  student   
+  student
   faculty
   alumni
 }
@@ -28,103 +227,31 @@ enum RequestStatus {
   cancelled
 }
 
-model Event {
-  id          String   @id @default(cuid())
-  title       String
-  description String?
-  startDate   DateTime
-  endDate     DateTime
-  location    String?
-  banner      String?
-  createdById String
-  createdAt   DateTime @default(now())
-
-  createdBy User @relation("CreatedEvents", fields: [createdById], references: [id], onDelete: Cascade)
-
-  @@index([startDate, endDate])
+enum StreamStatus {
+  LIVE
+  ENDED
 }
 
-model User {
-  id                          String    @id @default(uuid())
-  email                       String    @unique
-  passwordHashed              String
-  firstName                   String
-  lastName                    String
-  isVerified                  Boolean   @default(false)
-  verificationToken           String?
-  verificationTokenExpiration DateTime?
-  profilePicture              String?
-  bio                         String?
-  userType                    UserType
-  createdAt                   DateTime  @default(now())
-  city                        String?
-  websites                    String[]  @default([])
-  passwordResetToken          String?   @unique
-  passwordResetExpiry         DateTime?
-  
-  event          Event[] @relation("CreatedEvents")
-  connections    User[]  @relation("UserConnections")
-  connectedBy    User[]  @relation("UserConnections")
-  sentRequests     ConnectionRequest[] @relation("Sent")
-  receivedRequests ConnectionRequest[] @relation("Received")
-
-  student Student?
-  faculty Faculty?
-  alumni  Alumni?
+enum MarketplaceCategory {
+  textbooks
+  electronics
+  furniture
+  clothing
+  accessories
+  other
 }
 
-model Student {
-  userId         String    @unique
-  studentId      String    @unique
-  major          String
-  minor          String?
-  year           ClassYear
-  graduationYear Int
-  gpa            Float?
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([graduationYear])
+enum ItemCondition {
+  likeNew
+  excellent
+  good
+  fair
+  poor
 }
 
-model Faculty {
-  userId            String   @unique
-  employeeId        String   @unique
-  department        String
-  title             String
-  officeLocation    String
-  officeHours       String
-  researchInterests String?
-  sections          String[] @default([])
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-}
-
-model Alumni {
-  userId          String  @unique
-  graduationYear  Int
-  degree          String
-  currentCompany  String?
-  currentPosition String?
-  industry        String?
-  isMentor        Boolean @default(false)
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([graduationYear])
-}
-
-model ConnectionRequest {
-  id         String        @id @default(cuid())
-  sendId     String
-  receiverId String
-  status     RequestStatus @default(pending)
-  createdAt  DateTime      @default(now())
-
-  sender   User @relation("Sent", fields: [sendId], references: [id])
-  receiver User @relation("Received", fields: [receiverId], references: [id], onDelete: Cascade)
-
-  @@index([sendId])
-  @@index([receiverId])
-  @@index([status])
+enum ListingStatus {
+  active
+  sold
+  inactive
+  deleted
 }
