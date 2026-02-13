@@ -10,6 +10,7 @@ import { UserType } from "@prisma/client";
 import jwt from "jsonwebtoken";
 import { randomBytes } from "crypto";
 import { sendVerificationEmail } from "../../utils/sendgrid.service";
+import logger from "../../utils/logger";
 
 // Helper: converts full user object to PublicUser 
 export const toPublicUser = (user: any): PublicUser => ({
@@ -47,6 +48,8 @@ export const getAllUsers = async (): Promise<PublicUser[]> => {
 // Register a new user and initiate email verification
   export const registerUser = async (userData: any): Promise<PublicUser> => {
   const { email, password, firstName, lastName } = userData;
+
+  logger.info({ email }, "Attempting to register user");
 
   // Check for email if it already exists
   const existingUser = await prisma.user.findUnique({
@@ -165,6 +168,8 @@ export const loginUser = async (email: string, password: string) => {
   const user = await prisma.user.findUnique({
     where: { email: email.toLowerCase() },
   });
+
+  logger.info({ email }, "Attempting to login user");
 
   if (!user) {
     throw new Error("Invalid email or password");

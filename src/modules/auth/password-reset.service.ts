@@ -2,6 +2,7 @@ import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcrypt";
 import crypto from "crypto";
 import { sendPasswordResetEmail } from "./email.service";
+import logger from "../../utils/logger";
 
 const prisma = new PrismaClient();
 
@@ -27,9 +28,7 @@ export const requestPasswordReset = async (
 
     // SECURITY: Always return success even if user not found
     if (!user) {
-      console.log(
-        `Password reset requested for non-existent email: ${email}`
-      );
+      logger.warn({ email }, "password.reset.request_for_nonexistent_email");
       return {
         success: true,
         message: "If that email exists, a reset link has been sent",
@@ -62,14 +61,14 @@ export const requestPasswordReset = async (
     // Send email with unhashed token
     await sendPasswordResetEmail(user.email, resetToken, user.firstName);
 
-    console.log(`Password reset email sent to ${user.email}`);
+    logger.info({ email: user.email }, "password.reset.request.success");
 
     return {
       success: true,
       message: "If that email exists, a reset link has been sent",
     };
   } catch (error) {
-    console.error( "Request password reset error:", error);
+    logger.error({ email, stack: (error as any).stack }, "password.reset.request.failed");
     throw new Error("Failed to process password reset request");
   }
 };
@@ -102,7 +101,7 @@ export const resetPassword = async (
     });
 
     if (!user) {
-      console.log(" Invalid or expired reset token");
+      logger.warn({tokenProvided: !!token}, "password.reset.invalid_token");
       return {
         success: false,
         message: "Invalid or expired reset token",
@@ -122,14 +121,14 @@ export const resetPassword = async (
       },
     });
 
-    console.log(`Password reset successfully for user: ${user.email}`);
+    logger.info({ userId: user.id, email: user.email }, "password.reset.success");
 
     return {
       success: true,
       message: "Password has been reset successfully",
     };
   } catch (error) {
-    console.error("Reset password error:", error);
+    logger.error({ stack: (error as any).stack }, "password.reset.failed.unexpectedly");
     throw new Error("Failed to reset password");
   }
 };

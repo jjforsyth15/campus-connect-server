@@ -4,6 +4,7 @@
 */
 import { Request, Response, NextFunction } from "express";
 import * as userService from "./auth.service";
+import logger from "../../utils/logger";
 
 // Get all users
 export const getAllUsersHandler = async (
@@ -13,11 +14,12 @@ export const getAllUsersHandler = async (
 ) => {
   try {
     const users = await userService.getAllUsers();
+    logger.info({ userCount: users.length }, "user.fetch_all.success");
     res.status(200).json(users);
-    console.log("Fetched all users");
-  } catch (error) {
-    next(error);
-    console.error("Error fetching users:", error);
+  } 
+    catch (error) {
+      logger.error(error, "user.fetch_all.failed");
+      next(error);
   }
 };
 
@@ -28,12 +30,13 @@ export const registerUserHandler = async (
 ) => {
   try {
     const newUser = await userService.registerUser(req.body);
+    logger.info({userId: newUser.id}, "auth.register.success");
     res.status(201).json({
       message: "User registered successfully",
       user: newUser,
     });
-    console.log("User registered:", newUser.email);
   } catch (error) {
+    logger.error(error, "auth.register.failed");
     next(error);
   }
 };
@@ -46,18 +49,19 @@ export const loginUserHandler = async (
   try {
     const { email, password } = req.body;
     const { token, user } = await userService.loginUser(email, password);
+    logger.info({ userId: user.id}, "auth.login.success");
     res.status(200).json({
       message: "Login successful",
       token,
       user,
     });
-    console.log("User logged in:", email);
-  } catch (error: any) {
-    // Send proper JSON error responses
-    console.error("Login error:", error.message);
-
+  } catch (error: unknown) {
+    
     // Email not verified
+  if (error instanceof Error) {
+
     if (error.message === "Please verify your email before logging in") {
+      logger.warn(error, "auth.login.email_not_verified");
       return res.status(403).json({
         success: false,
         message: "Please verify your email before logging in"
@@ -66,6 +70,7 @@ export const loginUserHandler = async (
 
     // Invalid credentials
     if (error.message === "Invalid email or password") {
+      logger.warn("auth.login.invalid_credentials");
       return res.status(401).json({
         success: false,
         message: "Invalid email or password"
@@ -73,35 +78,44 @@ export const loginUserHandler = async (
     }
 
     // Generic error
+    logger.error(error, "auth.login.failed");
     return res.status(500).json({
       success: false,
       message: error.message || "Login failed"
     });
   } 
+  
+  logger.error(error, "auth.login.unknown_error");
+  return res.status(500).json({
+    success: false,
+    message: "An unknown error occurred during login"
+  });
 };
-
+}
 // Upsert user profile
 export const upsertProfileHandler = async (
   req: Request,
   res: Response, 
   next: NextFunction
 ) => {
+  const userId = (req as any).user?.id;
   try {
-    const userId = (req as any).user?.id;
-    if (!userId) 
+    if (!userId) {
+      logger.warn({ip:req.ip,route: req.originalUrl, method: req.method}, "auth.unauthorized.missing_user_id");
       return res.status(401).json({ message: "Unauthorized: User ID missing" });
+    }
 
     const updatedProfile = await userService.upsertUserProfile(userId, req.body);
 
-    console.log("Upsert profile request body:", req.body);
+    logger.debug({userId}, "user.profile.upsert.success");
 
     return res.status(200).json({
       message: "Profile upserted successfully",
       data: updatedProfile,
     });
   } catch (error) {
-    console.error("Error: upsertProfileHandler:", error);
-    return res.status(500).json({ message: "backend/src/api/user/user.controller.ts/upsertProfileHandler: Something went wrong" });
+    logger.error(error, "user.profile.upsert.failed");
+    return res.status(500).json({ message: "Something went wrong" });
   }
 }; 
 // get current authenticated user
@@ -113,6 +127,7 @@ export const getCurrentUserHandler = async (
   try {
     // req.user is set by authenticateToken middleware
     if (!req.user) {
+      logger.warn({ route: req.originalUrl }, "auth.current_user.unauthorized");
       return res.status(401).json({ 
         error: "Authentication required" 
       });
@@ -121,8 +136,8 @@ export const getCurrentUserHandler = async (
     res.status(200).json({
       user: req.user,
     });
-    console.log("Fetched current user:", req.user.email);
   } catch (error) {
+    logger.error(error, "auth.current_user.failed");
     next(error);
   }
 };
@@ -134,7 +149,7 @@ export const getPublicProfile = async (
   next: NextFunction
 ) => {
   try {
-    const id = req.params.id.trim();
+    const {id} = req.params;
 
     if(!id) 
       return res.status(400).json({ error: "User id missing" });
@@ -143,6 +158,7 @@ export const getPublicProfile = async (
     
     res.status(200).json(profile);
   } catch (error) {
+    logger.error(error, "user.public_profile.failed");
     next(error);
   }
 };
@@ -158,9 +174,10 @@ export const verifyEmailHandler = async (req: Request, res: Response, next: Next
 
     const user = await userService.verifyUserEmail(token);
 
+    logger.info({userId: user.id}, "auth.email.verify.success");
     res.status(200).json({ message: "Email verified successfully!" });
-    console.log("User verified:", user.email);
   } catch (error) {
+    logger.error(error, "auth.email.verify.failed");
     next(error);
   }
 };
@@ -176,9 +193,9 @@ export const resendVerificationHandler = async (req: Request, res: Response, nex
 
     await userService.resendVerification(email);
 
+    logger.debug({email}, "auth.email.resend_verification.success"); 
     res.status(200).json ({ message: "Verification email resent"})
-    console.log("Resent verification email to: ", email); 
   } catch (error) {
     next(error);
   }
-};
+  };

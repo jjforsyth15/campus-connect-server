@@ -1,4 +1,7 @@
+import { response } from "express";
 import nodemailer from "nodemailer";
+import logger from "../../utils/logger";
+import { error } from "console";
 
 
 // Load required env variables
@@ -76,25 +79,36 @@ California State University, Northridge`,
 
   try {
     const info = await transporter.sendMail(msg);
-    console.log("messageId:", info.messageId);
-    console.log("accepted:", info.accepted);
-    console.log("rejected:", info.rejected);
-    console.log("response:", info.response);
-
-    console.log(`✅ Password reset email sent to ${to}`);
+    logger.info({
+      to,
+      messageId: info.messageId,
+      accepted: info.accepted,
+      rejected: info.rejected,
+      response: info.response,
+    }, `✅ Password reset email sent successfully to ${to}`);
+    
   } catch (error: any) {
-    console.error("❌ Error sending password reset email:", error);
+    logger.error({ 
+      to, 
+      error: error.message, 
+      stack: error.stack,
+      response: error.response?.body, 
+    },`❌ Failed to send password reset email to ${to}`);
+  
     if (error.response) {
-      console.error("Email Error Response:", error.response.body);
+      logger.error({ 
+        to, 
+        response: error.response 
+      }, "SMTP response error details");
     }
     throw new Error("Failed to send password reset email");
   }
 
-  console.log("SMTP_HOST:", SMTP_HOST);
-  console.log("SMTP_PORT:", SMTP_PORT);
-  console.log("SMTP_USER:", SMTP_USER);
-  console.log("EMAIL_FROM:", FROM_EMAIL);
+  logger.info({SMTP_HOST}, "SMTP Host");
+  logger.info({SMTP_PORT}, "SMTP Port");
+  logger.info({SMTP_USER}, "SMTP User");
+  logger.info({FROM_EMAIL}, "From Email");
 
   await transporter.verify();
-  console.log("SMTP verified");
+  logger.info("SMTP verified");
 };
