@@ -44,11 +44,11 @@ describe('Email Sending Tests', () => {
       const mockSend = jest.fn().mockResolvedValue([{ statusCode: 202 }, {}]);
       (sgMail.send as jest.Mock) = mockSend;
 
-      await sendPasswordResetEmail({
-        email: 'test@my.csun.edu',
-        resetToken: 'reset-token-456',
-        firstName: 'John',
-      });
+      await sendPasswordResetEmail(
+        'test@my.csun.edu',
+        'reset-token-456',
+        'John',
+      );
 
       expect(mockSend).toHaveBeenCalledTimes(1);
       
@@ -69,11 +69,11 @@ describe('Email Sending Tests', () => {
       (sgMail.send as jest.Mock) = mockSend;
 
       await expect(
-        sendPasswordResetEmail({
-          email: 'test@my.csun.edu',
-          resetToken: 'reset-token-456',
-          firstName: 'John',
-        })
+        sendPasswordResetEmail(
+          'test@my.csun.edu',
+          'reset-token-456',
+          'John',
+        )
       ).rejects.toThrow('Failed to send password reset email');
     });
   });
