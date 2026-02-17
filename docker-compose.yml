@@ -1,0 +1,40 @@
+services:
+  # Backend Service
+  backend:
+    build: .
+    container_name: campus-campus-backend
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - backend-node_modules:/app/node_modules
+    networks:
+      - campus-connect-network
+
+  # Prisma Studio Service
+  prisma-studio:
+    build: .
+    container_name: campus-prisma-studio
+    command: npx prisma studio
+    ports:
+      - "5555:5555"
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - .:/app
+      - backend-node_modules:/app/node_modules
+    networks:
+      - campus-connect-network
+    depends_on:
+      - backend
+
+networks:
+  campus-connect-network:
+    driver: bridge
+
+volumes:
+  backend-node_modules:

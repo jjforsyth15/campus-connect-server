@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1.6
 FROM node:20-alpine AS deps
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 COPY package.json package-lock.json ./
@@ -13,6 +14,7 @@ RUN --mount=type=cache,target=/root/.npm npm ci
 
 # Development stage
 FROM node:20-alpine AS dev
+RUN apk add --no-cache openssl
 WORKDIR /app
 
 # Copy dependencies from deps stage
