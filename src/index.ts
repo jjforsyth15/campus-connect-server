@@ -4,6 +4,7 @@ import eventRoutes from "./modules/event/event.routes";
 import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import logger from "./utils/logger";
+import livestreamRoutes from "./modules/livestream/livestream.routes";
 import { setupSwaggerDocs } from "./swagger";
 
 import {
@@ -63,6 +64,8 @@ app.use("/api/v1/events", eventRoutes);
 logger.info("Mounted event routes at /api/v1/events");
 app.use("/api/v1/marketplace", marketplaceRoutes);
 logger.info("Mounted marketplace routes at /api/v1/marketplace");
+app.use("/api/v1/livestreams", livestreamRoutes);
+logger.info("Mounted livestream routes at /api/v1/livestreams");
 
 // Setup Swagger UI
 setupSwaggerDocs(app);
