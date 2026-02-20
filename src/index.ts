@@ -4,6 +4,7 @@ import eventRoutes from "./modules/event/event.routes";
 import marketplaceRoutes from "./modules/marketplace/marketplace.routes";
 import { errorHandler } from "./middleware/errorHandler";
 import logger from "./utils/logger";
+import postsRoutes from "./modules/posts/posts.routes";
 
 import {
   helmetConfig, 
@@ -62,6 +63,9 @@ app.use("/api/v1/events", eventRoutes);
 logger.info("Mounted event routes at /api/v1/events");
 app.use("/api/v1/marketplace", marketplaceRoutes);
 logger.info("Mounted marketplace routes at /api/v1/marketplace");
+app.use("/api/v1/posts", postsRoutes);
+logger.info("Mounted posts routes at /api/v1/posts");
+
 
 // Register global error handler (needs to be last)
 app.use(errorHandler);
