@@ -216,8 +216,8 @@ export const getPublicProfile = async (
 
     if (!id) return res.status(400).json({ error: "User id missing" });
 
-    const profile = await userService.publicProfile(id);
-
+    const profile = await userService.publicProfile(id as string);
+    
     res.status(200).json(profile);
   } catch (error) {
     logger.error(error, "user.public_profile.failed");
